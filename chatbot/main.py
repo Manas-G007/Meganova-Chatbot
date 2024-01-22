@@ -5,7 +5,7 @@ import requests
 from style import text1,text2,colors
 import os
 from dotenv import load_dotenv
-from contants import IDLE,LOAD,DONE,WRONG
+from contants import IDLE,LOAD,DONE,WRONG,BMI_QUESIONS
 
 load_dotenv()
 
@@ -14,6 +14,13 @@ placeholder_text="Type Something ..."
 
 win = Tk()
 win.title("Chatbot by Meganova")
+global active_bmi
+active_bmi=-1
+bmi_index=0
+bmi_response={
+    'weight':0,
+    'height':0
+}
 
 def getWeather(city):
     
@@ -62,6 +69,24 @@ def getMessage():
     if(userMessage!=""):
         label = Label(label_frame, text=f"You : {userMessage}",bg=colors[0],fg=colors[2],font=text1)
         label.pack(anchor=W)
+
+        global active_bmi,bmi_response
+        if(active_bmi==0):
+            bmi_response['weight']=userMessage
+            sendRes(BMI_QUESIONS[1])
+            active_bmi+=1
+            return
+        if(active_bmi==1):
+            bmi_response['height']=userMessage
+            calculateBMI()
+            # reset
+            active_bmi=-1
+            return
+
+        if(bmiCmd(userMessage)):
+            sendRes(BMI_QUESIONS[0])
+            active_bmi+=1
+            return
     
         if weatherCmd(userMessage):
             userMessage = userMessage[len('/weather'):].strip()
@@ -71,6 +96,41 @@ def getMessage():
             print(userMessage)
         
     canvas.config(scrollregion=canvas.bbox("all"))
+
+def calculateBMI():
+    global bmi_response
+    result=float(bmi_response['weight'])/float(bmi_response['height'])**2
+
+    if(result<16):
+        sendRes(f'Severe thinness : {result}')
+    if(result>16 and result<=17):
+        sendRes(f'Moderate Thinness : {result}')
+    if(result>17 and result<=18.5):
+        sendRes(f'Mild Thinness : {result}')
+    if(result>18.5 and result<=25):
+        sendRes(f'Normal : {result}')
+    if(result>25 and result<=30):
+        sendRes(f'Overweight : {result}')
+    if(result>30 and result<=35):
+        sendRes(f'Obese Class I : {result}')
+    if(result>35 and result<=40):
+        sendRes(f'Obese Class II : {result}')
+    if(result>40):
+        sendRes(f'Obese Class III : {result}')
+
+def sendRes(msg):
+    label = Label(label_frame, text=f"Chatbot : {msg}",bg=colors[0],fg=colors[1],font=text1)
+    label.pack(anchor=W)
+
+def bmiCmd(message):
+    if message.lower().startswith('/bmi'):
+        message = message[len('/bmi'):]
+
+        message = message.strip()
+
+        return True
+    else:
+        return False
 
 def weatherCmd(message):
     if message.lower().startswith('/weather'):
